@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 const AccountForm = () => {
   const [username, setUsername] = useState('');
@@ -10,6 +12,7 @@ const AccountForm = () => {
     password: '',
     confirmPassword: ''
   });
+  const navigate = useNavigate();
 
   const usernameConditions = {
     noSpecialChar: /^[a-zA-Z0-9]*$/.test(username),
@@ -20,7 +23,8 @@ const AccountForm = () => {
     length: password.length >= 8,
     containsNumber: /[0-9]/.test(password),
     containsUpperCase: /[A-Z]/.test(password),
-    noSequences: !/(.)\1{3,}|(0123|1234|2345|3456|4567|5678|6789|7890)/.test(password)
+    noSequences: !/(.)\1{3,}|(0123|1234|2345|3456|4567|5678|6789|7890)/.test(password),
+    noSpecialChar: /^[a-zA-Z0-9]*$/.test(password) // Ensure no special characters
   };
 
   const validateUsername = (username) => {
@@ -33,7 +37,7 @@ const AccountForm = () => {
     return passwordRegex.test(password);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitted(true);
 
@@ -51,7 +55,7 @@ const AccountForm = () => {
 
     if (!validatePassword(password)) {
       valid = false;
-      errors.password = 'Password must be at least 8 characters long, contain at least one number and one uppercase letter.';
+      errors.password = 'Password must be at least 8 characters long, contain at least one number and one uppercase letter, and no special characters.';
     }
 
     if (password !== confirmPassword) {
@@ -62,15 +66,16 @@ const AccountForm = () => {
     setErrors(errors);
 
     if (valid) {
-      alert('Form submitted successfully!');
       // Handle form submission
+      await axios.post('/api/account-form', { username, password });
+      navigate('/editInfo');
     }
   };
 
   const renderValidationMessage = (condition, message) => (
     <li className="flex items-center text-sm text-gray-600 mt-1">
       {submitted && (
-        <span className={`mr-2 ${condition ? 'text-green-500' : 'text-red-500'}`}>
+        <span className={`${condition ? 'text-green-500' : 'text-red-500'} mr-2`}>
           {condition ? '✓' : '✗'}
         </span>
       )}
@@ -117,6 +122,7 @@ const AccountForm = () => {
               {renderValidationMessage(passwordConditions.containsNumber, 'Contain at least 1 number.')}
               {renderValidationMessage(passwordConditions.containsUpperCase, 'Contain at least 1 UPPER case letter.')}
               {renderValidationMessage(passwordConditions.noSequences, 'Not contain sequences or repeated characters such as 1234, 3333, ZZZZ, etc.')}
+              {renderValidationMessage(passwordConditions.noSpecialChar, 'Must not contain any special characters.')}
             </ul>
           </div>
 
